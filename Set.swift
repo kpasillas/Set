@@ -11,30 +11,55 @@ import UIKit
 
 struct Set
 {
-    private(set) var originalDeckOfCards = [Card]()
-    private(set) var dealtCards = [Card?]()
-    private(set) var selectedCardsIndices = [Int]()
-    private(set) var matchedCards = [Card]()
-    private(set) var score = 0
-//    private(set) var numberOfSelectedCards = 0
-    
-    init() {
-        originalDeckOfCards = [Card]()
+    private(set) var originalDeckOfCards: [Card] = {
+        var CardsArray = [Card]()
         for symbol in Card.Symbol.allCases {
             for number in Card.Number.allCases {
                 for shading in Card.Shading.allCases {
                     for color in Card.Color.allCases {
-                        let card = Card(symbol: symbol, number: number, shading: shading, color: color)
-                        originalDeckOfCards += [card]
+                        CardsArray += [Card(symbol: symbol, number: number, shading: shading, color: color)]
                     }
                 }
             }
         }
-        dealCards(number: 12)
+        return CardsArray
+    }()
+    
+    private(set) var dealtCards = [Card?]()
+    private(set) var selectedCardsIndices = [Int]()
+    private(set) var matchedCards = [Card]()
+    private(set) var score = 0
+    
+    var isSet: Bool {
+        get {
+            return testIfSet(testEnums)
+        }
+    }
+    
+    init() {
+                for _ in 1...12 {
+                    dealtCards += [dealCard()]
+                }
         
-//        for _ in 0..<57 {
-//            _ = originalDeckOfCards.remove(at: originalDeckOfCards.count.arc4random)
-//        }
+        //        for _ in 0..<57 {
+        //            _ = originalDeckOfCards.remove(at: originalDeckOfCards.count.arc4random)
+        //        }
+    }
+    
+    mutating func dealCard() -> Card? {
+        return (originalDeckOfCards.count > 0 ? originalDeckOfCards.remove(at: originalDeckOfCards.count.arc4random) : nil)
+    }
+    
+    mutating func dealThreeCards() {
+        if isSet {
+            replaceSet()
+            selectedCardsIndices.removeAll()
+        } else {
+            for _ in 1...3 {
+                dealtCards += [dealCard()]
+                //            dealtCards += [originalDeckOfCards.remove(at: index)]
+            }
+        }
     }
     
     mutating func selectCard(at index: Int) {
@@ -45,8 +70,7 @@ struct Set
                 selectedCardsIndices += [index]
             }
         } else {
-//            if originalDeckOfCards.count >= 3 && isSet() {
-            if isSet() {
+            if isSet {
                 replaceSet()
                 score += 3
             } else {
@@ -55,47 +79,37 @@ struct Set
             if selectedCardsIndices.contains(index) {
                 selectedCardsIndices.removeAll()
             } else {
-            selectedCardsIndices.removeAll()
-            selectedCardsIndices += [index]
-            }
-        }
-    }
-    
-    mutating func dealCards(number: Int) {
-        if originalDeckOfCards.count >= number {
-            if isSet() {
-                replaceSet()
                 selectedCardsIndices.removeAll()
-            } else {
-                for _ in 1...number {
-                    dealtCards += [originalDeckOfCards.remove(at: originalDeckOfCards.count.arc4random)]
-                    //            dealtCards += [originalDeckOfCards.remove(at: index)]
-                }
+                selectedCardsIndices += [index]
             }
-        }
-    }
-    
-    func isSet() -> Bool {
-        if selectedCardsIndices.count < 3 {
-            return false
-//        } else {
-//            return true
-//        }
-        } else if ((dealtCards[selectedCardsIndices[0]]?.symbol == dealtCards[selectedCardsIndices[1]]?.symbol && dealtCards[selectedCardsIndices[0]]?.symbol == dealtCards[selectedCardsIndices[2]]?.symbol) || (dealtCards[selectedCardsIndices[0]]?.symbol != dealtCards[selectedCardsIndices[1]]?.symbol && dealtCards[selectedCardsIndices[0]]?.symbol != dealtCards[selectedCardsIndices[2]]?.symbol && dealtCards[selectedCardsIndices[1]]?.symbol != dealtCards[selectedCardsIndices[2]]?.symbol)) && ((dealtCards[selectedCardsIndices[0]]?.number == dealtCards[selectedCardsIndices[1]]?.number && dealtCards[selectedCardsIndices[0]]?.number == dealtCards[selectedCardsIndices[2]]?.number) || (dealtCards[selectedCardsIndices[0]]?.number != dealtCards[selectedCardsIndices[1]]?.number && dealtCards[selectedCardsIndices[0]]?.number != dealtCards[selectedCardsIndices[2]]?.number && dealtCards[selectedCardsIndices[1]]?.number != dealtCards[selectedCardsIndices[2]]?.number)) && ((dealtCards[selectedCardsIndices[0]]?.shading == dealtCards[selectedCardsIndices[1]]?.shading && dealtCards[selectedCardsIndices[0]]?.shading == dealtCards[selectedCardsIndices[2]]?.shading) || (dealtCards[selectedCardsIndices[0]]?.shading != dealtCards[selectedCardsIndices[1]]?.shading && dealtCards[selectedCardsIndices[0]]?.shading != dealtCards[selectedCardsIndices[2]]?.shading && dealtCards[selectedCardsIndices[1]]?.shading != dealtCards[selectedCardsIndices[2]]?.shading)) && ((dealtCards[selectedCardsIndices[0]]?.color == dealtCards[selectedCardsIndices[1]]?.color && dealtCards[selectedCardsIndices[0]]?.color == dealtCards[selectedCardsIndices[2]]?.color) || (dealtCards[selectedCardsIndices[0]]?.color != dealtCards[selectedCardsIndices[1]]?.color && dealtCards[selectedCardsIndices[0]]?.color != dealtCards[selectedCardsIndices[2]]?.color && dealtCards[selectedCardsIndices[1]]?.color != dealtCards[selectedCardsIndices[2]]?.color)) {
-            return true
-        } else {
-            return false
         }
     }
     
     mutating func replaceSet() {
         for index in selectedCardsIndices.indices {
             matchedCards += [dealtCards.remove(at: selectedCardsIndices[index])!]
-            if originalDeckOfCards.count >= 1 {
-                dealtCards.insert(originalDeckOfCards.remove(at: originalDeckOfCards.count.arc4random), at: selectedCardsIndices[index])
-            } else {
-                dealtCards.insert(nil, at: selectedCardsIndices[index])
-            }
+            dealtCards.insert(dealCard(), at: selectedCardsIndices[index])
+        }
+    }
+    
+    func testIfSet(_ aClosure: (Card, Card, Card) -> Bool) -> Bool {
+        return (selectedCardsIndices.count == 3 && aClosure(dealtCards[selectedCardsIndices[0]]!, dealtCards[selectedCardsIndices[1]]!, dealtCards[selectedCardsIndices[2]]!))
+    }
+    
+    var testEnums: (Card, Card, Card) -> Bool = {
+        return ((($0.symbol == $1.symbol && $0.symbol == $2.symbol) || ($0.symbol != $1.symbol && $0.symbol != $2.symbol && $1.symbol != $2.symbol)) && (($0.number == $1.number && $0.number == $2.number) || ($0.number != $1.number && $0.number != $2.number && $1.number != $2.number)) && (($0.shading == $1.shading && $0.shading == $2.shading) || ($0.shading != $1.shading && $0.shading != $2.shading && $1.shading != $2.shading)) && (($0.color == $1.color && $0.color == $2.color) || ($0.color != $1.color && $0.color != $2.color && $1.color != $2.color)))
+    }
+    
+}
+
+extension Int {
+    var arc4random: Int {
+        if self > 0 {
+            return Int(arc4random_uniform(UInt32(self)))
+        } else if self < 0 {
+            return -Int(arc4random_uniform(UInt32(abs(self))))
+        } else {
+            return 0
         }
     }
 }
